@@ -26,28 +26,33 @@
     }
   </style>
 </head>
+
 <body>
   <div id="status">Loading scene...</div>
 
-  <script type="importmap">
-  {
-    "imports": {
-      "@kitware/vtk.js/": "https://esm.sh/@kitware/vtk.js/"
-    }
-  }
-  </script>
+  <script src="https://unpkg.com/vtk.js@34.10.0/vtk.js"></script>
 
-  <script type="module">
-    import '@kitware/vtk.js/Rendering/Profiles/All';
-    import '@kitware/vtk.js/IO/Core/DataAccessHelper/HttpDataAccessHelper';
-
-    import vtkFullScreenRenderWindow from '@kitware/vtk.js/Rendering/Misc/FullScreenRenderWindow';
-    import vtkHttpSceneLoader from '@kitware/vtk.js/IO/Core/HttpSceneLoader';
-
+  <script>
     const status = document.getElementById('status');
-    const params = new URLSearchParams(window.location.search);
 
+    const params = new URLSearchParams(window.location.search);
     const sceneUrl = params.get('url') || 'Tor.vtkjs.0/index.json';
+
+    if (!window.vtk) {
+      status.textContent = 'vtk.js was not loaded.';
+      throw new Error('vtk.js was not loaded');
+    }
+
+    const vtkFullScreenRenderWindow =
+      vtk.Rendering.Misc.vtkFullScreenRenderWindow;
+
+    const vtkHttpSceneLoader =
+      vtk.IO.Core.vtkHttpSceneLoader;
+
+    if (!vtkHttpSceneLoader) {
+      status.textContent = 'vtkHttpSceneLoader was not found in vtk.js bundle.';
+      throw new Error('vtkHttpSceneLoader was not found');
+    }
 
     const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
       background: [0.384314, 0.364706, 0.352941],
@@ -57,27 +62,25 @@
     const renderWindow = fullScreenRenderer.getRenderWindow();
 
     const sceneImporter = vtkHttpSceneLoader.newInstance({
-      renderer,
+      renderer: renderer,
       fetchGzip: true,
     });
 
-    sceneImporter.onReady(() => {
-      status.textContent = 'Scene loaded. Drag to rotate, scroll to zoom.';
-      setTimeout(() => status.remove(), 2500);
-
+    sceneImporter.onReady(function () {
       renderer.resetCamera();
       renderWindow.render();
+
+      status.textContent = 'Scene loaded. Drag to rotate, scroll to zoom.';
+      setTimeout(function () {
+        status.remove();
+      }, 2500);
     });
 
-    try {
-      sceneImporter.setUrl(sceneUrl);
-    } catch (error) {
-      status.textContent = 'Error loading scene. Open DevTools Console.';
-      console.error(error);
-    }
+    sceneImporter.setUrl(sceneUrl);
 
-    window.addEventListener('dblclick', () => {
+    window.addEventListener('dblclick', function () {
       sceneImporter.resetScene();
+      renderer.resetCamera();
       renderWindow.render();
     });
   </script>
