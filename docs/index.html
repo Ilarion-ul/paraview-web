@@ -6,7 +6,12 @@
 </head>
 <body>
 <script>
-  window.location.href = "viewer.html?url=Tor.vtkjs.0/index.json";
+  const sceneUrl =
+    "https://Ilarion-ul.github.io/paraview-web/Tor.vtkjs.0/index.json";
+
+  window.location.href =
+    "https://kitware.github.io/glance/app/?name=Tor&url=" +
+    encodeURIComponent(sceneUrl);
 </script>
 </body>
 </html>
