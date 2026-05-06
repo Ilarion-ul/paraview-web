@@ -264,10 +264,13 @@
   <script>
     const params = new URLSearchParams(window.location.search);
     const densityParam = Number(params.get('density') || 0.5);
+    const quality = params.get('quality') || 'mobile';
+    const defaultManifest = quality === 'full' ? 'FissPoint.vtkjs.index.json' : 'FissMobile.vtkjs.index.json';
+    const defaultPrefix = quality === 'full' ? 'FissPoint.vtkjs' : 'FissMobile.vtkjs';
     const config = {
       name: params.get('name') || 'Fiss',
-      manifestUrl: params.get('manifest') || 'FissPoint.vtkjs.index.json',
-      prefix: params.get('prefix') || 'FissPoint.vtkjs',
+      manifestUrl: params.get('manifest') || defaultManifest,
+      prefix: params.get('prefix') || defaultPrefix,
       frameDelay: Number(params.get('delay') || 1200),
       fetchGzip: params.get('gzip') === '1',
       scalarMin: Number(params.get('scalarMin') || 0),
