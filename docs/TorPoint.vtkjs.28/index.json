@@ -1,0 +1,579 @@
+{
+  "version": 1.0,
+  "background": [
+    0.384314,
+    0.364706,
+    0.352941
+  ],
+  "camera": {
+    "focalPoint": [
+      -1.19388e-13,
+      -2.23688e-13,
+      431.22
+    ],
+    "position": [
+      843.025,
+      1559.95,
+      1423.38
+    ],
+    "viewUp": [
+      0.409781,
+      -0.636831,
+      0.65309
+    ]
+  },
+  "centerOfRotation": [
+    -1.19388e-13,
+    -2.23688e-13,
+    431.22
+  ],
+  "scene": [
+    {
+      "name": "1",
+      "type": "vtkHttpDataSetReader",
+      "vtkHttpDataSetReader": {
+        "url": "1"
+      },
+      "volume": {
+        "origin": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          0,
+          0,
+          0
+        ]
+      },
+      "volumeRotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "mapper": {},
+      "property": {
+        "interpolationType": 1,
+        "independentComponents": true,
+        "ambient": 0,
+        "diffuse": 1,
+        "specular": 0,
+        "specularPower": 100,
+        "shade": 0,
+        "components": [
+          {
+            "colorChannels": 3,
+            "rgbTransferFunction": {
+              "useAboveRangeColor": false,
+              "useBelowRangeColor": false,
+              "colorSpace": 2,
+              "nanColor": [
+                0,
+                1,
+                0
+              ],
+              "nodes": [
+                [
+                  14459100000000.0,
+                  0.0564,
+                  0.0564,
+                  0.47,
+                  0.5,
+                  0
+                ],
+                [
+                  33537300000000.0,
+                  0.243,
+                  0.46035,
+                  0.81,
+                  0.5,
+                  0
+                ],
+                [
+                  47646500000000.0,
+                  0.356814,
+                  0.745025,
+                  0.954368,
+                  0.5,
+                  0
+                ],
+                [
+                  62504900000000.0,
+                  0.6882,
+                  0.93,
+                  0.91791,
+                  0.5,
+                  0
+                ],
+                [
+                  70051000000000.0,
+                  0.899496,
+                  0.944646,
+                  0.768657,
+                  0.5,
+                  0
+                ],
+                [
+                  79860300000000.0,
+                  0.957108,
+                  0.833819,
+                  0.508916,
+                  0.5,
+                  0
+                ],
+                [
+                  92970600000000.0,
+                  0.927521,
+                  0.621439,
+                  0.315357,
+                  0.5,
+                  0
+                ],
+                [
+                  108703000000000.0,
+                  0.8,
+                  0.352,
+                  0.16,
+                  0.5,
+                  0
+                ],
+                [
+                  125643000000000.0,
+                  0.59,
+                  0.0767,
+                  0.119475,
+                  0.5,
+                  0
+                ]
+              ]
+            },
+            "scalarOpacity": {
+              "clamping": true,
+              "points": [
+                [
+                  14459100000000.0,
+                  0,
+                  0.5,
+                  0
+                ],
+                [
+                  30852600000000.0,
+                  0,
+                  0.5,
+                  0
+                ],
+                [
+                  125643000000000.0,
+                  0.328488,
+                  0.5,
+                  0
+                ],
+                [
+                  125643000000000.0,
+                  0.0145349,
+                  0.5,
+                  0
+                ],
+                [
+                  125643000000000.0,
+                  1,
+                  0.5,
+                  0
+                ]
+              ]
+            },
+            "scalarOpacityUnitDistance": 14.807
+          },
+          {
+            "colorChannels": 1,
+            "grayTransferFunction": {
+              "clamping": true,
+              "points": [
+                [
+                  0,
+                  0,
+                  0.5,
+                  0
+                ],
+                [
+                  1024,
+                  1,
+                  0.5,
+                  0
+                ]
+              ]
+            },
+            "scalarOpacity": {
+              "clamping": true,
+              "points": [
+                [
+                  0,
+                  1,
+                  0.5,
+                  0
+                ],
+                [
+                  1024,
+                  1,
+                  0.5,
+                  0
+                ]
+              ]
+            },
+            "scalarOpacityUnitDistance": 1
+          },
+          {
+            "colorChannels": 1,
+            "grayTransferFunction": {
+              "clamping": true,
+              "points": [
+                [
+                  0,
+                  0,
+                  0.5,
+                  0
+                ],
+                [
+                  1024,
+                  1,
+                  0.5,
+                  0
+                ]
+              ]
+            },
+            "scalarOpacity": {
+              "clamping": true,
+              "points": [
+                [
+                  0,
+                  1,
+                  0.5,
+                  0
+                ],
+                [
+                  1024,
+                  1,
+                  0.5,
+                  0
+                ]
+              ]
+            },
+            "scalarOpacityUnitDistance": 1
+          },
+          {
+            "colorChannels": 1,
+            "grayTransferFunction": {
+              "clamping": true,
+              "points": [
+                [
+                  0,
+                  0,
+                  0.5,
+                  0
+                ],
+                [
+                  1024,
+                  1,
+                  0.5,
+                  0
+                ]
+              ]
+            },
+            "scalarOpacity": {
+              "clamping": true,
+              "points": [
+                [
+                  0,
+                  1,
+                  0.5,
+                  0
+                ],
+                [
+                  1024,
+                  1,
+                  0.5,
+                  0
+                ]
+              ]
+            },
+            "scalarOpacityUnitDistance": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "2",
+      "type": "vtkHttpDataSetReader",
+      "vtkHttpDataSetReader": {
+        "url": "2"
+      },
+      "volume": {
+        "origin": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          0,
+          0,
+          0
+        ]
+      },
+      "volumeRotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "mapper": {},
+      "property": {
+        "interpolationType": 1,
+        "independentComponents": true,
+        "ambient": 0,
+        "diffuse": 1,
+        "specular": 0,
+        "specularPower": 100,
+        "shade": 0,
+        "components": [
+          {
+            "colorChannels": 3,
+            "rgbTransferFunction": {
+              "useAboveRangeColor": false,
+              "useBelowRangeColor": false,
+              "colorSpace": 2,
+              "nanColor": [
+                0,
+                1,
+                0
+              ],
+              "nodes": [
+                [
+                  0,
+                  0.0564,
+                  0.0564,
+                  0.47,
+                  0.5,
+                  0
+                ],
+                [
+                  200981000000000.0,
+                  0.243,
+                  0.46035,
+                  0.81,
+                  0.5,
+                  0
+                ],
+                [
+                  349614000000000.0,
+                  0.356814,
+                  0.745025,
+                  0.954368,
+                  0.5,
+                  0
+                ],
+                [
+                  506140000000000.0,
+                  0.6882,
+                  0.93,
+                  0.91791,
+                  0.5,
+                  0
+                ],
+                [
+                  585635000000000.0,
+                  0.899496,
+                  0.944646,
+                  0.768657,
+                  0.5,
+                  0
+                ],
+                [
+                  688971000000000.0,
+                  0.957108,
+                  0.833819,
+                  0.508916,
+                  0.5,
+                  0
+                ],
+                [
+                  827082000000000.0,
+                  0.927521,
+                  0.621439,
+                  0.315357,
+                  0.5,
+                  0
+                ],
+                [
+                  992815000000000.0,
+                  0.8,
+                  0.352,
+                  0.16,
+                  0.5,
+                  0
+                ],
+                [
+                  1171270000000000.0,
+                  0.59,
+                  0.0767,
+                  0.119475,
+                  0.5,
+                  0
+                ]
+              ]
+            },
+            "scalarOpacity": {
+              "clamping": true,
+              "points": [
+                [
+                  0,
+                  0,
+                  0.5,
+                  0
+                ],
+                [
+                  557422000000000.0,
+                  0.0261628,
+                  0.5,
+                  0
+                ],
+                [
+                  1171270000000000.0,
+                  1,
+                  0.5,
+                  0
+                ]
+              ]
+            },
+            "scalarOpacityUnitDistance": 14.807
+          },
+          {
+            "colorChannels": 1,
+            "grayTransferFunction": {
+              "clamping": true,
+              "points": [
+                [
+                  0,
+                  0,
+                  0.5,
+                  0
+                ],
+                [
+                  1024,
+                  1,
+                  0.5,
+                  0
+                ]
+              ]
+            },
+            "scalarOpacity": {
+              "clamping": true,
+              "points": [
+                [
+                  0,
+                  1,
+                  0.5,
+                  0
+                ],
+                [
+                  1024,
+                  1,
+                  0.5,
+                  0
+                ]
+              ]
+            },
+            "scalarOpacityUnitDistance": 1
+          },
+          {
+            "colorChannels": 1,
+            "grayTransferFunction": {
+              "clamping": true,
+              "points": [
+                [
+                  0,
+                  0,
+                  0.5,
+                  0
+                ],
+                [
+                  1024,
+                  1,
+                  0.5,
+                  0
+                ]
+              ]
+            },
+            "scalarOpacity": {
+              "clamping": true,
+              "points": [
+                [
+                  0,
+                  1,
+                  0.5,
+                  0
+                ],
+                [
+                  1024,
+                  1,
+                  0.5,
+                  0
+                ]
+              ]
+            },
+            "scalarOpacityUnitDistance": 1
+          },
+          {
+            "colorChannels": 1,
+            "grayTransferFunction": {
+              "clamping": true,
+              "points": [
+                [
+                  0,
+                  0,
+                  0.5,
+                  0
+                ],
+                [
+                  1024,
+                  1,
+                  0.5,
+                  0
+                ]
+              ]
+            },
+            "scalarOpacity": {
+              "clamping": true,
+              "points": [
+                [
+                  0,
+                  1,
+                  0.5,
+                  0
+                ],
+                [
+                  1024,
+                  1,
+                  0.5,
+                  0
+                ]
+              ]
+            },
+            "scalarOpacityUnitDistance": 1
+          }
+        ]
+      }
+    }
+  ],
+  "lookupTables": {}
+}

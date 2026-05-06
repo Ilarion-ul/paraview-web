@@ -1,0 +1,58 @@
+﻿{
+    "vtkClass":  "vtkImageData",
+    "spacing":  [
+                    7.875,
+                    7.875,
+                    9.98143
+                ],
+    "origin":  [
+                   -311.0625,
+                   -311.0625,
+                   156.730715
+               ],
+    "extent":  [
+                   0,
+                   79,
+                   0,
+                   79,
+                   0,
+                   55
+               ],
+    "direction":  [
+                      1,
+                      0,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0,
+                      0,
+                      1
+                  ],
+    "pointData":  {
+                      "vtkClass":  "vtkDataSetAttributes",
+                      "arrays":  [
+                                     {
+                                         "data":  {
+                                                      "vtkClass":  "vtkDataArray",
+                                                      "name":  "flux5g_xyz_g2",
+                                                      "numberOfComponents":  1,
+                                                      "dataType":  "Float64Array",
+                                                      "ref":  {
+                                                                  "encode":  "LittleEndian",
+                                                                  "basepath":  "../../Tor.vtkjs.2/1/data",
+                                                                  "id":  "Float64_358400-d9d915a4f37954d7a467713d6a7c4188"
+                                                              },
+                                                      "size":  358400
+                                                  }
+                                     }
+                                 ],
+                      "activeTCoords":  -1,
+                      "activeScalars":  0,
+                      "activeNormals":  -1,
+                      "activeGlobalIds":  -1,
+                      "activeTensors":  -1,
+                      "activePedigreeIds":  -1,
+                      "activeVectors":  -1
+                  }
+}

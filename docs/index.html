@@ -1,17 +1,632 @@
-﻿<!doctype html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>ParaView 3D scene</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Fiss 3D</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --panel: rgba(20, 24, 28, 0.9);
+      --line: rgba(255, 255, 255, 0.16);
+      --text: #f5f7fa;
+      --muted: #b8c1cc;
+      --accent: #f2b544;
+      --danger: #ff6b5a;
+      --ok: #65d28f;
+    }
+
+    * { box-sizing: border-box; }
+
+    [hidden] { display: none !important; }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #625d5a;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+      touch-action: none;
+    }
+
+    #view {
+      position: fixed;
+      inset: 0;
+    }
+
+    .pill,
+    .status,
+    .settings-toggle,
+    .tuning,
+    .controls {
+      position: fixed;
+      z-index: 10;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 16px 44px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .pill {
+      top: max(12px, env(safe-area-inset-top));
+      left: max(12px, env(safe-area-inset-left));
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-height: 42px;
+      max-width: calc(100vw - 24px);
+      padding: 8px 12px;
+      pointer-events: none;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      flex: 0 0 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(242, 181, 68, 0.18);
+    }
+
+    .title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .frame,
+    .counter {
+      color: var(--muted);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .status {
+      top: max(12px, env(safe-area-inset-top));
+      right: max(12px, env(safe-area-inset-right));
+      width: min(380px, calc(100vw - 24px));
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .status strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .status[data-tone="ok"] strong { color: var(--ok); }
+    .status[data-tone="error"] strong { color: var(--danger); }
+
+    .settings-toggle {
+      top: max(12px, env(safe-area-inset-top));
+      right: max(12px, env(safe-area-inset-right));
+      z-index: 12;
+    }
+
+    .controls,
+    .tuning {
+      left: 50%;
+      width: min(720px, calc(100vw - 24px));
+      transform: translateX(-50%);
+    }
+
+    .controls {
+      bottom: max(14px, env(safe-area-inset-bottom));
+      display: grid;
+      grid-template-columns: 44px 1fr 58px;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+    }
+
+    .tuning {
+      bottom: calc(max(14px, env(safe-area-inset-bottom)) + 76px);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 10px 12px;
+    }
+
+    .tuning label {
+      display: grid;
+      grid-template-columns: 64px 1fr 54px;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    button {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 2;
+    }
+
+    #playIcon {
+      fill: currentColor;
+      stroke: none;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .counter {
+      text-align: right;
+    }
+
+    @media (max-width: 620px) {
+      .pill { right: max(12px, env(safe-area-inset-right)); }
+
+      .status {
+        top: auto;
+        right: auto;
+        left: 50%;
+        bottom: calc(max(14px, env(safe-area-inset-bottom)) + 144px);
+        transform: translateX(-50%);
+      }
+
+      .controls { grid-template-columns: 44px 1fr 48px; }
+
+      .tuning {
+        grid-template-columns: 1fr;
+        bottom: calc(max(14px, env(safe-area-inset-bottom)) + 76px);
+      }
+    }
+  </style>
 </head>
 <body>
-<script>
-  const sceneUrl =
-    "https://Ilarion-ul.github.io/paraview-web/Tor.vtkjs.0/index.json";
+  <div id="view" aria-label="3D scene"></div>
 
-  window.location.href =
-    "https://kitware.github.io/glance/app/?name=Tor&url=" +
-    encodeURIComponent(sceneUrl);
-</script>
+  <div class="pill" aria-live="polite">
+    <span class="dot" aria-hidden="true"></span>
+    <span class="title" id="title">Fiss</span>
+    <span class="frame" id="frameMeta">frame 1/1</span>
+  </div>
+
+  <div class="status" id="status">
+    <strong>Loading</strong>
+    <span>Preparing 3D scene.</span>
+  </div>
+
+  <button class="settings-toggle" id="settingsButton" type="button" aria-label="Settings" aria-expanded="false" aria-controls="tuningPanel">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <line x1="4" y1="21" x2="4" y2="14"></line>
+      <line x1="4" y1="10" x2="4" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="12"></line>
+      <line x1="12" y1="8" x2="12" y2="3"></line>
+      <line x1="20" y1="21" x2="20" y2="16"></line>
+      <line x1="20" y1="12" x2="20" y2="3"></line>
+      <line x1="1" y1="14" x2="7" y2="14"></line>
+      <line x1="9" y1="8" x2="15" y2="8"></line>
+      <line x1="17" y1="16" x2="23" y2="16"></line>
+    </svg>
+  </button>
+
+  <section class="tuning" id="tuningPanel" aria-label="Volume controls" hidden>
+    <label>
+      <span>Cut</span>
+      <input id="cutoff" type="range" min="0" max="1167" value="52" step="1" aria-label="Cut">
+      <span id="cutoffValue">52</span>
+    </label>
+    <label>
+      <span>Density</span>
+      <input id="density" type="range" min="0" max="100" value="50" step="1" aria-label="Density">
+      <span id="densityValue">50%</span>
+    </label>
+  </section>
+
+  <section class="controls" aria-label="Animation controls">
+    <button id="playButton" type="button" aria-label="Pause">
+      <svg id="playIcon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7 5h3v14H7zM14 5h3v14h-3z"></path>
+      </svg>
+    </button>
+    <input id="timeline" type="range" min="0" max="0" value="0" step="1" aria-label="Frame">
+    <span class="counter" id="counter">1/1</span>
+  </section>
+
+  <script src="https://unpkg.com/vtk.js@34.10.0/vtk.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const densityParam = Number(params.get('density') || 0.5);
+    const config = {
+      name: params.get('name') || 'Fiss',
+      manifestUrl: params.get('manifest') || 'FissPoint.vtkjs.index.json',
+      prefix: params.get('prefix') || 'FissPoint.vtkjs',
+      frameDelay: Number(params.get('delay') || 1200),
+      fetchGzip: params.get('gzip') === '1',
+      scalarMin: Number(params.get('scalarMin') || 0),
+      scalarMax: Number(params.get('scalarMax') || 1167.47),
+      cutoff: Number(params.get('cutoff') || 52),
+      density: densityParam > 1 ? densityParam / 100 : densityParam,
+      prefetch: params.get('prefetch') !== '0',
+    };
+
+    const view = document.getElementById('view');
+    const title = document.getElementById('title');
+    const statusBox = document.getElementById('status');
+    const timeline = document.getElementById('timeline');
+    const counter = document.getElementById('counter');
+    const frameMeta = document.getElementById('frameMeta');
+    const playButton = document.getElementById('playButton');
+    const playIcon = document.getElementById('playIcon');
+    const settingsButton = document.getElementById('settingsButton');
+    const tuningPanel = document.getElementById('tuningPanel');
+    const cutoff = document.getElementById('cutoff');
+    const cutoffValue = document.getElementById('cutoffValue');
+    const density = document.getElementById('density');
+    const densityValue = document.getElementById('densityValue');
+
+    let renderer;
+    let renderWindow;
+    let sceneImporter;
+    let frameCount = 1;
+    let currentFrame = 0;
+    let isPlaying = true;
+    let timer = null;
+    let loadToken = 0;
+    let isLoading = false;
+    let pendingFrame = null;
+    let cameraInitialized = false;
+    let prefetchedFrame = null;
+
+    function setStatus(heading, text, tone) {
+      statusBox.dataset.tone = tone || '';
+      statusBox.replaceChildren();
+      const strong = document.createElement('strong');
+      const span = document.createElement('span');
+      strong.textContent = heading;
+      span.textContent = text;
+      statusBox.append(strong, span);
+      statusBox.hidden = false;
+    }
+
+    function hideOkStatus() {
+      window.setTimeout(function () {
+        if (statusBox.dataset.tone === 'ok') statusBox.hidden = true;
+      }, 1600);
+    }
+
+    function setPlayIcon() {
+      playButton.setAttribute('aria-label', isPlaying ? 'Pause' : 'Play');
+      playIcon.innerHTML = isPlaying
+        ? '<path d="M7 5h3v14H7zM14 5h3v14h-3z"></path>'
+        : '<path d="M8 5v14l11-7z"></path>';
+    }
+
+    function toggleSettings() {
+      const isOpen = tuningPanel.hidden;
+      tuningPanel.hidden = !isOpen;
+      settingsButton.setAttribute('aria-expanded', String(isOpen));
+    }
+
+    function frameUrl(index) {
+      return config.prefix + '.' + index + '/index.json';
+    }
+
+    function normalizeFrame(index) {
+      return ((index % frameCount) + frameCount) % frameCount;
+    }
+
+    function updateLabels(index) {
+      const label = String(index + 1) + '/' + String(frameCount);
+      counter.textContent = label;
+      frameMeta.textContent = 'frame ' + label;
+      timeline.value = String(index);
+    }
+
+    async function fetchJson(url) {
+      const response = await fetch(url, { cache: 'no-cache' });
+      if (!response.ok) throw new Error(url + ' -> HTTP ' + response.status);
+      return response.json();
+    }
+
+    function collectDataRefs(node, refs) {
+      if (!node || typeof node !== 'object') return;
+      if (node.ref && node.ref.id) refs.push(node.ref);
+
+      Object.keys(node).forEach(function (key) {
+        const value = node[key];
+        if (Array.isArray(value)) value.forEach(function (item) { collectDataRefs(item, refs); });
+        else collectDataRefs(value, refs);
+      });
+    }
+
+    async function prefetchFrame(index) {
+      if (!config.prefetch || prefetchedFrame === index) return;
+      prefetchedFrame = index;
+
+      try {
+        const frameIndexUrl = frameUrl(index);
+        const frame = await fetchJson(frameIndexUrl);
+        const baseUrl = new URL(frameIndexUrl, window.location.href);
+        const scenes = Array.isArray(frame.scene) ? frame.scene : [];
+
+        await Promise.all(scenes.map(async function (scene) {
+          const reader = scene.vtkHttpDataSetReader || {};
+          const datasetPath = reader.url || scene.name;
+          if (!datasetPath) return;
+
+          const datasetUrl = new URL(datasetPath + '/index.json', baseUrl).href;
+          const dataset = await fetchJson(datasetUrl);
+          const refs = [];
+          collectDataRefs(dataset, refs);
+          await Promise.all(refs.map(function (ref) {
+            const dataUrl = new URL((ref.basepath || 'data') + '/' + ref.id, datasetUrl).href;
+            return fetch(dataUrl, { cache: 'force-cache' }).catch(function () {});
+          }));
+        }));
+      } catch (error) {
+        prefetchedFrame = null;
+      }
+    }
+
+    function sceneHasContent() {
+      const volumes = renderer && renderer.getVolumes ? renderer.getVolumes() : [];
+      const actors = renderer && renderer.getActors ? renderer.getActors() : [];
+      return Boolean((volumes && volumes.length) || (actors && actors.length));
+    }
+
+    function clearRendererContent() {
+      if (!renderer) return;
+
+      if (sceneImporter && sceneImporter.resetScene) sceneImporter.resetScene();
+
+      if (renderer.removeAllVolumes) renderer.removeAllVolumes();
+      else if (renderer.getVolumes && renderer.removeVolume) {
+        renderer.getVolumes().slice().forEach(function (volume) {
+          renderer.removeVolume(volume);
+        });
+      }
+
+      if (renderer.removeAllActors) renderer.removeAllActors();
+      else if (renderer.getActors && renderer.removeActor) {
+        renderer.getActors().slice().forEach(function (actor) {
+          renderer.removeActor(actor);
+        });
+      }
+
+      if (renderWindow) renderWindow.render();
+    }
+
+    function getCameraState() {
+      const camera = renderer && renderer.getActiveCamera && renderer.getActiveCamera();
+      if (!camera) return null;
+
+      return {
+        position: camera.getPosition(),
+        focalPoint: camera.getFocalPoint(),
+        viewUp: camera.getViewUp(),
+        clippingRange: camera.getClippingRange ? camera.getClippingRange() : null,
+      };
+    }
+
+    function restoreCameraState(state) {
+      const camera = renderer && renderer.getActiveCamera && renderer.getActiveCamera();
+      if (!camera || !state) return;
+
+      camera.setPosition.apply(camera, state.position);
+      camera.setFocalPoint.apply(camera, state.focalPoint);
+      camera.setViewUp.apply(camera, state.viewUp);
+      if (state.clippingRange && camera.setClippingRange) {
+        camera.setClippingRange.apply(camera, state.clippingRange);
+      }
+    }
+
+    function addOpacityPoint(fn, x, y) {
+      if (!fn) return;
+      if (fn.addPointLong) fn.addPointLong(x, y, 0.5, 0);
+      else if (fn.addPoint) fn.addPoint(x, y);
+    }
+
+    function applyVolumeControls() {
+      const cut = Number(cutoff.value);
+      const opacity = Number(density.value) / 100;
+      cutoffValue.textContent = String(Math.round(cut));
+      densityValue.textContent = String(Math.round(opacity * 100)) + '%';
+
+      const volumes = renderer && renderer.getVolumes ? renderer.getVolumes() : [];
+      volumes.forEach(function (volume) {
+        const property = volume.getProperty && volume.getProperty();
+        const opacityFunction = property && property.getScalarOpacity && property.getScalarOpacity(0);
+        if (!opacityFunction) return;
+
+        if (opacityFunction.removeAllPoints) opacityFunction.removeAllPoints();
+        addOpacityPoint(opacityFunction, config.scalarMin, 0);
+        addOpacityPoint(opacityFunction, cut, 0);
+        addOpacityPoint(opacityFunction, Math.min(config.scalarMax, cut + 0.001), opacity);
+        addOpacityPoint(opacityFunction, config.scalarMax, 1);
+        if (opacityFunction.modified) opacityFunction.modified();
+        if (property.modified) property.modified();
+      });
+
+      if (renderWindow) renderWindow.render();
+    }
+
+    function markReady(index, cameraState) {
+      currentFrame = index;
+      if (cameraState) {
+        restoreCameraState(cameraState);
+      } else if (!cameraInitialized) {
+        renderer.resetCamera();
+        cameraInitialized = true;
+      }
+      applyVolumeControls();
+      renderWindow.render();
+      updateLabels(index);
+      setStatus('Ready', 'Drag to rotate, pinch or scroll to zoom.', 'ok');
+      hideOkStatus();
+      window.setTimeout(function () {
+        prefetchFrame(normalizeFrame(index + 1));
+      }, 50);
+    }
+
+    function createImporter() {
+      sceneImporter = vtk.IO.Core.vtkHttpSceneLoader.newInstance({
+        renderer: renderer,
+        fetchGzip: config.fetchGzip,
+      });
+    }
+
+    async function loadFrame(index) {
+      const requestedFrame = normalizeFrame(index);
+      if (isLoading) {
+        pendingFrame = requestedFrame;
+        updateLabels(requestedFrame);
+        return;
+      }
+
+      isLoading = true;
+      const token = ++loadToken;
+      const nextFrame = requestedFrame;
+      const cameraState = cameraInitialized ? getCameraState() : null;
+      updateLabels(nextFrame);
+      setStatus('Loading', 'Frame ' + String(nextFrame + 1) + ' of ' + String(frameCount) + '.', '');
+
+      try {
+        clearRendererContent();
+        createImporter();
+        await new Promise(function (resolve, reject) {
+          const timeout = window.setTimeout(function () {
+            reject(new Error('scene load timeout'));
+          }, 30000);
+          sceneImporter.onReady(function () {
+            window.clearTimeout(timeout);
+            resolve();
+          });
+          sceneImporter.setUrl(frameUrl(nextFrame));
+        });
+        if (token === loadToken) markReady(nextFrame, cameraState);
+      } catch (error) {
+        if (sceneHasContent()) {
+          markReady(nextFrame, cameraState);
+          return;
+        }
+        window.clearTimeout(timer);
+        timer = null;
+        isPlaying = false;
+        setPlayIcon();
+        setStatus('Scene did not load', error.message, 'error');
+      } finally {
+        isLoading = false;
+        if (pendingFrame !== null) {
+          const queuedFrame = pendingFrame;
+          pendingFrame = null;
+          loadFrame(queuedFrame);
+        } else if (isPlaying) {
+          scheduleNextFrame();
+        }
+      }
+    }
+
+    function scheduleNextFrame() {
+      window.clearTimeout(timer);
+      if (!isPlaying || isLoading) return;
+      timer = window.setTimeout(function () {
+        loadFrame(currentFrame + 1);
+      }, config.frameDelay);
+    }
+
+    function stopPlaybackTimer() {
+      window.clearTimeout(timer);
+      timer = null;
+    }
+
+    async function bootstrap() {
+      if (!window.vtk) {
+        setStatus('Error', 'vtk.js did not load.', 'error');
+        return;
+      }
+
+      title.textContent = config.name;
+      setPlayIcon();
+
+      try {
+        const manifest = await fetchJson(config.manifestUrl);
+        const steps = manifest.animation && manifest.animation.timeSteps;
+        frameCount = Array.isArray(steps) && steps.length ? steps.length : 1;
+      } catch (error) {
+        frameCount = Number(params.get('frames') || 1);
+      }
+
+      timeline.max = String(Math.max(0, frameCount - 1));
+      cutoff.min = String(config.scalarMin);
+      cutoff.max = String(config.scalarMax);
+      cutoff.value = String(config.cutoff);
+      density.value = String(Math.round(config.density * 100));
+      updateLabels(0);
+      applyVolumeControls();
+
+      const fullScreenRenderer = vtk.Rendering.Misc.vtkFullScreenRenderWindow.newInstance({
+        rootContainer: view,
+        background: [0.384314, 0.364706, 0.352941],
+      });
+      renderer = fullScreenRenderer.getRenderer();
+      renderWindow = fullScreenRenderer.getRenderWindow();
+
+      playButton.addEventListener('click', function () {
+        isPlaying = !isPlaying;
+        setPlayIcon();
+        if (isPlaying) scheduleNextFrame();
+        else stopPlaybackTimer();
+      });
+
+      settingsButton.addEventListener('click', toggleSettings);
+
+      timeline.addEventListener('input', function () {
+        stopPlaybackTimer();
+        isPlaying = false;
+        setPlayIcon();
+        loadFrame(Number(timeline.value));
+      });
+
+      cutoff.addEventListener('input', applyVolumeControls);
+      density.addEventListener('input', applyVolumeControls);
+
+      window.addEventListener('dblclick', function () {
+        renderer.resetCamera();
+        renderWindow.render();
+      });
+
+      await loadFrame(0);
+    }
+
+    bootstrap();
+  </script>
 </body>
 </html>
