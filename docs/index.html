@@ -251,9 +251,9 @@
   </section>
 
   <section class="controls" aria-label="Animation controls">
-    <button id="playButton" type="button" aria-label="Pause">
+    <button id="playButton" type="button" aria-label="Play">
       <svg id="playIcon" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M7 5h3v14H7zM14 5h3v14h-3z"></path>
+        <path d="M8 5v14l11-7z"></path>
       </svg>
     </button>
     <input id="timeline" type="range" min="0" max="0" value="0" step="1" aria-label="Frame">
@@ -265,6 +265,7 @@
     const params = new URLSearchParams(window.location.search);
     const densityParam = Number(params.get('density') || 0.5);
     const quality = params.get('quality') || 'mobile';
+    const isTouchDevice = window.matchMedia('(hover: none), (pointer: coarse)').matches;
     const defaultManifest = quality === 'full' ? 'FissPoint.vtkjs.index.json' : 'FissMobile.vtkjs.index.json';
     const defaultPrefix = quality === 'full' ? 'FissPoint.vtkjs' : 'FissMobile.vtkjs';
     const config = {
@@ -272,15 +273,29 @@
       manifestUrl: params.get('manifest') || defaultManifest,
       prefix: params.get('prefix') || defaultPrefix,
       frameDelay: Number(params.get('delay') || (quality === 'full' ? 1200 : 220)),
+      maxPixelRatio: Number(params.get('pixelRatio') || (isTouchDevice ? 1 : 2)),
+      sampleDistance: Number(params.get('sampleDistance') || (quality === 'full' ? 2.5 : 8)),
+      imageSampleDistance: Number(params.get('imageSampleDistance') || (isTouchDevice ? 2 : 1.4)),
+      interactionImageSampleDistance: Number(params.get('interactionImageSampleDistance') || (isTouchDevice ? 4 : 2.2)),
       fetchGzip: params.get('gzip') === '1',
       scalarMin: Number(params.get('scalarMin') || 0),
       scalarMax: Number(params.get('scalarMax') || 1167.47),
       cutoff: Number(params.get('cutoff') || 52),
       density: densityParam > 1 ? densityParam / 100 : densityParam,
+      autoplay: params.get('autoplay') === '1',
       inMemory: params.get('memory') !== '0' && quality !== 'full',
       preloadConcurrency: Math.max(1, Math.min(4, Number(params.get('concurrency') || 3))),
       prefetch: params.get('prefetch') !== '0' && !(params.get('memory') !== '0' && quality !== 'full'),
     };
+
+    if (config.maxPixelRatio > 0 && window.devicePixelRatio > config.maxPixelRatio) {
+      try {
+        Object.defineProperty(window, 'devicePixelRatio', {
+          configurable: true,
+          get: function () { return config.maxPixelRatio; },
+        });
+      } catch (error) {}
+    }
 
     const view = document.getElementById('view');
     const title = document.getElementById('title');
@@ -302,18 +317,24 @@
     let sceneImporter;
     let frameCount = 1;
     let currentFrame = 0;
-    let isPlaying = true;
+    let isPlaying = config.autoplay;
     let timer = null;
+    let playbackToken = 0;
     let loadToken = 0;
     let isLoading = false;
     let pendingFrame = null;
+    let queuedPlayback = false;
     let cameraInitialized = false;
     let prefetchedFrame = null;
     let memoryFrames = [];
     let memoryMode = false;
     let memoryScalars = null;
+    let memoryScalarBuffer = null;
     let memoryImageData = null;
     let memoryMapper = null;
+    let interactionTimer = null;
+    let lastTap = { time: 0, x: 0, y: 0 };
+    let lastPlaybackToggleTime = 0;
 
     function setStatus(heading, text, tone) {
       statusBox.dataset.tone = tone || '';
@@ -343,6 +364,24 @@
       const isOpen = tuningPanel.hidden;
       tuningPanel.hidden = !isOpen;
       settingsButton.setAttribute('aria-expanded', String(isOpen));
+    }
+
+    function setPlaying(nextValue) {
+      if (nextValue && config.inMemory && !memoryMode) {
+        queuedPlayback = true;
+        setStatus('Loading model', 'Animation will start after all frames are in memory.', '');
+        return;
+      }
+
+      queuedPlayback = false;
+      isPlaying = Boolean(nextValue);
+      setPlayIcon();
+      if (isPlaying) scheduleNextFrame();
+      else stopPlaybackTimer();
+    }
+
+    function togglePlayback() {
+      setPlaying(!isPlaying);
     }
 
     function frameUrl(index) {
@@ -474,8 +513,10 @@
       if (!scalars || !scalars.setData) return false;
 
       memoryScalars = scalars;
+      memoryScalarBuffer = scalars.getData ? scalars.getData() : null;
       memoryImageData = imageData;
       memoryMapper = mapper;
+      applyMapperPerformance(false);
       return true;
     }
 
@@ -484,14 +525,19 @@
       const values = memoryFrames[nextFrame];
       if (!memoryMode || !values || !memoryScalars) return false;
 
-      memoryScalars.setData(values, 1);
+      if (memoryScalarBuffer && memoryScalarBuffer.length === values.length && memoryScalarBuffer.set) {
+        memoryScalarBuffer.set(values);
+      } else {
+        memoryScalars.setData(values, 1);
+        memoryScalarBuffer = values;
+      }
       if (memoryScalars.modified) memoryScalars.modified();
       if (memoryImageData && memoryImageData.modified) memoryImageData.modified();
       if (memoryMapper && memoryMapper.modified) memoryMapper.modified();
 
       currentFrame = nextFrame;
       updateLabels(nextFrame);
-      applyVolumeControls();
+      if (renderWindow) renderWindow.render();
       return true;
     }
 
@@ -578,6 +624,57 @@
       else if (fn.addPoint) fn.addPoint(x, y);
     }
 
+    function applyMapperPerformance(interactive) {
+      const volumes = renderer && renderer.getVolumes ? renderer.getVolumes() : [];
+      volumes.forEach(function (volume) {
+        const mapper = volume.getMapper && volume.getMapper();
+        if (!mapper) return;
+
+        if (mapper.setSampleDistance) mapper.setSampleDistance(config.sampleDistance);
+        if (mapper.setImageSampleDistance) {
+          mapper.setImageSampleDistance(
+            interactive ? config.interactionImageSampleDistance : config.imageSampleDistance
+          );
+        }
+        if (mapper.setAutoAdjustSampleDistances) mapper.setAutoAdjustSampleDistances(true);
+        if (mapper.modified) mapper.modified();
+      });
+    }
+
+    function setInteractionQuality(interactive) {
+      window.clearTimeout(interactionTimer);
+      if (interactive) {
+        applyMapperPerformance(true);
+        return;
+      }
+
+      interactionTimer = window.setTimeout(function () {
+        applyMapperPerformance(false);
+        if (renderWindow) renderWindow.render();
+      }, 180);
+    }
+
+    function handlePlaybackTap(x, y, event) {
+      if (!isTouchDevice) return;
+
+      const now = window.performance.now();
+      if (now - lastPlaybackToggleTime < 850) return;
+
+      const dx = x - lastTap.x;
+      const dy = y - lastTap.y;
+      const isDoubleTap = now - lastTap.time < 320 && Math.sqrt(dx * dx + dy * dy) < 42;
+      if (isDoubleTap) {
+        if (event && event.preventDefault) event.preventDefault();
+        if (event && event.stopPropagation) event.stopPropagation();
+        lastTap.time = 0;
+        lastPlaybackToggleTime = now;
+        togglePlayback();
+        return;
+      }
+
+      lastTap = { time: now, x: x, y: y };
+    }
+
     function applyVolumeControls() {
       const cut = Number(cutoff.value);
       const opacity = Number(density.value) / 100;
@@ -599,6 +696,7 @@
         if (property.modified) property.modified();
       });
 
+      applyMapperPerformance(false);
       if (renderWindow) renderWindow.render();
     }
 
@@ -688,7 +786,9 @@
     function scheduleNextFrame() {
       window.clearTimeout(timer);
       if (!isPlaying || isLoading) return;
+      const token = ++playbackToken;
       timer = window.setTimeout(function () {
+        if (!isPlaying || token !== playbackToken) return;
         loadFrame(currentFrame + 1);
       }, config.frameDelay);
     }
@@ -696,6 +796,7 @@
     function stopPlaybackTimer() {
       window.clearTimeout(timer);
       timer = null;
+      playbackToken += 1;
     }
 
     async function bootstrap() {
@@ -731,25 +832,53 @@
       renderWindow = fullScreenRenderer.getRenderWindow();
 
       playButton.addEventListener('click', function () {
-        isPlaying = !isPlaying;
-        setPlayIcon();
-        if (isPlaying) scheduleNextFrame();
-        else stopPlaybackTimer();
+        if (isTouchDevice) return;
+        togglePlayback();
       });
+
+      playButton.addEventListener('touchend', function (event) {
+        const touch = event.changedTouches && event.changedTouches[0];
+        if (!touch) return;
+        handlePlaybackTap(touch.clientX, touch.clientY, event);
+      }, { passive: false });
 
       settingsButton.addEventListener('click', toggleSettings);
 
       timeline.addEventListener('input', function () {
-        stopPlaybackTimer();
-        isPlaying = false;
-        setPlayIcon();
+        setPlaying(false);
         loadFrame(Number(timeline.value));
       });
 
       cutoff.addEventListener('input', applyVolumeControls);
       density.addEventListener('input', applyVolumeControls);
 
+      view.addEventListener('pointerdown', function () {
+        setInteractionQuality(true);
+      });
+
+      view.addEventListener('pointerup', function (event) {
+        setInteractionQuality(false);
+        if (!isTouchDevice || event.pointerType === 'mouse') return;
+        handlePlaybackTap(event.clientX, event.clientY, event);
+      }, { passive: false });
+
+      view.addEventListener('touchend', function (event) {
+        setInteractionQuality(false);
+        const touch = event.changedTouches && event.changedTouches[0];
+        if (!touch) return;
+        handlePlaybackTap(touch.clientX, touch.clientY, event);
+      }, { passive: false });
+
+      view.addEventListener('pointercancel', function () {
+        setInteractionQuality(false);
+      });
+
+      view.addEventListener('pointerleave', function () {
+        setInteractionQuality(false);
+      });
+
       window.addEventListener('dblclick', function () {
+        if (isTouchDevice) return;
         renderer.resetCamera();
         renderWindow.render();
       });
@@ -770,9 +899,7 @@
         }
       }
 
-      isPlaying = autoplay;
-      setPlayIcon();
-      if (isPlaying) scheduleNextFrame();
+      setPlaying(queuedPlayback || autoplay);
     }
 
     bootstrap();
