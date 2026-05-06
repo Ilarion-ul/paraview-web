@@ -271,13 +271,15 @@
       name: params.get('name') || 'Fiss',
       manifestUrl: params.get('manifest') || defaultManifest,
       prefix: params.get('prefix') || defaultPrefix,
-      frameDelay: Number(params.get('delay') || 1200),
+      frameDelay: Number(params.get('delay') || (quality === 'full' ? 1200 : 220)),
       fetchGzip: params.get('gzip') === '1',
       scalarMin: Number(params.get('scalarMin') || 0),
       scalarMax: Number(params.get('scalarMax') || 1167.47),
       cutoff: Number(params.get('cutoff') || 52),
       density: densityParam > 1 ? densityParam / 100 : densityParam,
-      prefetch: params.get('prefetch') !== '0',
+      inMemory: params.get('memory') !== '0' && quality !== 'full',
+      preloadConcurrency: Math.max(1, Math.min(4, Number(params.get('concurrency') || 3))),
+      prefetch: params.get('prefetch') !== '0' && !(params.get('memory') !== '0' && quality !== 'full'),
     };
 
     const view = document.getElementById('view');
@@ -307,6 +309,11 @@
     let pendingFrame = null;
     let cameraInitialized = false;
     let prefetchedFrame = null;
+    let memoryFrames = [];
+    let memoryMode = false;
+    let memoryScalars = null;
+    let memoryImageData = null;
+    let memoryMapper = null;
 
     function setStatus(heading, text, tone) {
       statusBox.dataset.tone = tone || '';
@@ -397,6 +404,120 @@
       } catch (error) {
         prefetchedFrame = null;
       }
+    }
+
+    function getSceneDatasetPath(frame) {
+      const scenes = Array.isArray(frame.scene) ? frame.scene : [];
+      const scene = scenes.find(function (item) {
+        return item && (item.vtkHttpDataSetReader || item.type === 'vtkHttpDataSetReader');
+      });
+      if (!scene) return null;
+
+      const reader = scene.vtkHttpDataSetReader || {};
+      return reader.url || scene.name || null;
+    }
+
+    function getPrimaryArrayMeta(dataset) {
+      const pointArrays = dataset && dataset.pointData && dataset.pointData.arrays;
+      const cellArrays = dataset && dataset.cellData && dataset.cellData.arrays;
+      const arrays = Array.isArray(pointArrays) && pointArrays.length ? pointArrays : cellArrays;
+      const wrapper = Array.isArray(arrays) && arrays.length ? arrays[0] : null;
+      return wrapper && wrapper.data ? wrapper.data : null;
+    }
+
+    function createTypedArray(type, buffer) {
+      switch (type) {
+        case 'Float64Array':
+          return new Float64Array(buffer);
+        case 'Int32Array':
+          return new Int32Array(buffer);
+        case 'Uint32Array':
+          return new Uint32Array(buffer);
+        case 'Int16Array':
+          return new Int16Array(buffer);
+        case 'Uint16Array':
+          return new Uint16Array(buffer);
+        case 'Int8Array':
+          return new Int8Array(buffer);
+        case 'Uint8Array':
+          return new Uint8Array(buffer);
+        default:
+          return new Float32Array(buffer);
+      }
+    }
+
+    async function loadFrameArray(index) {
+      const frameIndexUrl = frameUrl(index);
+      const frame = await fetchJson(frameIndexUrl);
+      const datasetPath = getSceneDatasetPath(frame);
+      if (!datasetPath) throw new Error('Frame ' + String(index + 1) + ' has no volume dataset.');
+
+      const frameBaseUrl = new URL(frameIndexUrl, window.location.href);
+      const datasetUrl = new URL(datasetPath + '/index.json', frameBaseUrl).href;
+      const dataset = await fetchJson(datasetUrl);
+      const meta = getPrimaryArrayMeta(dataset);
+      if (!meta || !meta.ref || !meta.ref.id) throw new Error('Frame ' + String(index + 1) + ' has no scalar data.');
+
+      const dataUrl = new URL((meta.ref.basepath || 'data') + '/' + meta.ref.id, datasetUrl).href;
+      const response = await fetch(dataUrl, { cache: 'force-cache' });
+      if (!response.ok) throw new Error(dataUrl + ' -> HTTP ' + response.status);
+      return createTypedArray(meta.dataType, await response.arrayBuffer());
+    }
+
+    function bindMemoryVolume() {
+      const volumes = renderer && renderer.getVolumes ? renderer.getVolumes() : [];
+      const volume = volumes && volumes[0];
+      const mapper = volume && volume.getMapper && volume.getMapper();
+      const imageData = mapper && mapper.getInputData && mapper.getInputData();
+      const pointData = imageData && imageData.getPointData && imageData.getPointData();
+      const scalars = pointData && pointData.getScalars && pointData.getScalars();
+      if (!scalars || !scalars.setData) return false;
+
+      memoryScalars = scalars;
+      memoryImageData = imageData;
+      memoryMapper = mapper;
+      return true;
+    }
+
+    function showMemoryFrame(index) {
+      const nextFrame = normalizeFrame(index);
+      const values = memoryFrames[nextFrame];
+      if (!memoryMode || !values || !memoryScalars) return false;
+
+      memoryScalars.setData(values, 1);
+      if (memoryScalars.modified) memoryScalars.modified();
+      if (memoryImageData && memoryImageData.modified) memoryImageData.modified();
+      if (memoryMapper && memoryMapper.modified) memoryMapper.modified();
+
+      currentFrame = nextFrame;
+      updateLabels(nextFrame);
+      applyVolumeControls();
+      return true;
+    }
+
+    async function preloadFramesToMemory() {
+      memoryFrames = new Array(frameCount);
+      let nextFrame = 0;
+      let loaded = 0;
+
+      async function worker() {
+        while (nextFrame < frameCount) {
+          const index = nextFrame;
+          nextFrame += 1;
+          memoryFrames[index] = await loadFrameArray(index);
+          loaded += 1;
+          setStatus('Loading model', String(loaded) + '/' + String(frameCount) + ' frames are in memory.', '');
+        }
+      }
+
+      setStatus('Loading model', 'Preparing all frames in memory.', '');
+      const workers = [];
+      const workerCount = Math.min(config.preloadConcurrency, frameCount);
+      for (let i = 0; i < workerCount; i += 1) workers.push(worker());
+      await Promise.all(workers);
+      memoryMode = true;
+      setStatus('Ready', 'All frames are in memory.', 'ok');
+      hideOkStatus();
     }
 
     function sceneHasContent() {
@@ -494,9 +615,11 @@
       updateLabels(index);
       setStatus('Ready', 'Drag to rotate, pinch or scroll to zoom.', 'ok');
       hideOkStatus();
-      window.setTimeout(function () {
-        prefetchFrame(normalizeFrame(index + 1));
-      }, 50);
+      if (config.prefetch) {
+        window.setTimeout(function () {
+          prefetchFrame(normalizeFrame(index + 1));
+        }, 50);
+      }
     }
 
     function createImporter() {
@@ -508,6 +631,11 @@
 
     async function loadFrame(index) {
       const requestedFrame = normalizeFrame(index);
+      if (memoryMode && showMemoryFrame(requestedFrame)) {
+        if (isPlaying) scheduleNextFrame();
+        return;
+      }
+
       if (isLoading) {
         pendingFrame = requestedFrame;
         updateLabels(requestedFrame);
@@ -626,7 +754,25 @@
         renderWindow.render();
       });
 
+      const autoplay = isPlaying;
+      isPlaying = false;
+      setPlayIcon();
       await loadFrame(0);
+
+      if (config.inMemory && bindMemoryVolume()) {
+        try {
+          await preloadFramesToMemory();
+          showMemoryFrame(0);
+        } catch (error) {
+          memoryMode = false;
+          memoryFrames = [];
+          setStatus('Memory mode failed', 'Using direct frame loading. ' + error.message, 'error');
+        }
+      }
+
+      isPlaying = autoplay;
+      setPlayIcon();
+      if (isPlaying) scheduleNextFrame();
     }
 
     bootstrap();
