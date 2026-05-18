@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Neutron Capture 3D</title>
+</head>
+<body>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const quality = params.get('quality') || 'mobile';
+    params.set('name', params.get('name') || 'Neutron Capture');
+    params.set('scalarMax', params.get('scalarMax') || '14513800000000');
+    params.set('cutoff', params.get('cutoff') || '1300590000000');
+
+    if (!params.has('manifest')) {
+      params.set('manifest', quality === 'full' ? 'CaptPoint.vtkjs.index.json' : 'CaptMobile.vtkjs.index.json');
+    }
+
+    if (!params.has('prefix')) {
+      params.set('prefix', quality === 'full' ? 'CaptPoint.vtkjs' : 'CaptMobile.vtkjs');
+    }
+
+    window.location.replace('./?' + params.toString());
+  </script>
+</body>
+</html>
