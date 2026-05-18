@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Fiss 3D</title>
+  <title>Power Density 3D</title>
   <style>
     :root {
       color-scheme: dark;
@@ -214,7 +214,7 @@
 
   <div class="pill" aria-live="polite">
     <span class="dot" aria-hidden="true"></span>
-    <span class="title" id="title">Fiss</span>
+    <span class="title" id="title">Power Density</span>
     <span class="frame" id="frameMeta">frame 1/1</span>
   </div>
 
@@ -269,7 +269,8 @@
     const defaultManifest = quality === 'full' ? 'FissPoint.vtkjs.index.json' : 'FissMobile.vtkjs.index.json';
     const defaultPrefix = quality === 'full' ? 'FissPoint.vtkjs' : 'FissMobile.vtkjs';
     const config = {
-      name: params.get('name') || 'Fiss',
+      name: params.get('name') || 'Power Density',
+      assetVersion: params.get('assetVersion') || 'data-20260518-power-density-capt-cachefix-1',
       manifestUrl: params.get('manifest') || defaultManifest,
       prefix: params.get('prefix') || defaultPrefix,
       frameDelay: Number(params.get('delay') || (quality === 'full' ? 1200 : 220)),
@@ -400,8 +401,15 @@
       timeline.value = String(index);
     }
 
+    function withAssetVersion(url) {
+      if (!config.assetVersion) return url;
+      const versionedUrl = new URL(url, window.location.href);
+      versionedUrl.searchParams.set('assetVersion', config.assetVersion);
+      return versionedUrl.href;
+    }
+
     async function fetchJson(url) {
-      const response = await fetch(url, { cache: 'no-cache' });
+      const response = await fetch(withAssetVersion(url), { cache: 'no-cache' });
       if (!response.ok) throw new Error(url + ' -> HTTP ' + response.status);
       return response.json();
     }
@@ -438,7 +446,7 @@
           collectDataRefs(dataset, refs);
           await Promise.all(refs.map(function (ref) {
             const dataUrl = new URL((ref.basepath || 'data') + '/' + ref.id, datasetUrl).href;
-            return fetch(dataUrl, { cache: 'force-cache' }).catch(function () {});
+            return fetch(withAssetVersion(dataUrl), { cache: 'force-cache' }).catch(function () {});
           }));
         }));
       } catch (error) {
@@ -499,7 +507,7 @@
       if (!meta || !meta.ref || !meta.ref.id) throw new Error('Frame ' + String(index + 1) + ' has no scalar data.');
 
       const dataUrl = new URL((meta.ref.basepath || 'data') + '/' + meta.ref.id, datasetUrl).href;
-      const response = await fetch(dataUrl, { cache: 'force-cache' });
+      const response = await fetch(withAssetVersion(dataUrl), { cache: 'force-cache' });
       if (!response.ok) throw new Error(dataUrl + ' -> HTTP ' + response.status);
       return createTypedArray(meta.dataType, await response.arrayBuffer());
     }
@@ -759,7 +767,7 @@
             window.clearTimeout(timeout);
             resolve();
           });
-          sceneImporter.setUrl(frameUrl(nextFrame));
+          sceneImporter.setUrl(withAssetVersion(frameUrl(nextFrame)));
         });
         if (token === loadToken) markReady(nextFrame, cameraState);
       } catch (error) {
