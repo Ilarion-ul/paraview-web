@@ -1,6 +1,6 @@
 {
   "vtkClass": "vtkImageData",
-  "spacing": [7.875, 7.875, 9.98143],
+  "spacing": [7.875, 7.875, 9.70571],
   "origin": [-315, -315, 151.74],
   "extent": [0, 80, 0, 80, 0, 56],
   "direction": [1, 0, 0, 0, 1, 0, 0, 0, 1],
@@ -15,7 +15,7 @@
       "ref": {
          "encode": "LittleEndian",
          "basepath": "data",
-         "id": "Float64_358400-07108a7ae32b43b5442cc9c0ad38f553"
+         "id": "Float64_358400-393b30bca0f9706bf4275079d0cae216"
       },
       "size": 358400
     }}

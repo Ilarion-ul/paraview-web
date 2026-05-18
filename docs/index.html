@@ -240,7 +240,7 @@
   <section class="tuning" id="tuningPanel" aria-label="Volume controls" hidden>
     <label>
       <span>Cut</span>
-      <input id="cutoff" type="range" min="0" max="1167" value="52" step="1" aria-label="Cut">
+      <input id="cutoff" type="range" min="0" max="392" value="52" step="1" aria-label="Cut">
       <span id="cutoffValue">52</span>
     </label>
     <label>
@@ -279,7 +279,7 @@
       interactionImageSampleDistance: Number(params.get('interactionImageSampleDistance') || (isTouchDevice ? 4 : 2.2)),
       fetchGzip: params.get('gzip') === '1',
       scalarMin: Number(params.get('scalarMin') || 0),
-      scalarMax: Number(params.get('scalarMax') || 1167.47),
+      scalarMax: Number(params.get('scalarMax') || 391.959),
       cutoff: Number(params.get('cutoff') || 52),
       density: densityParam > 1 ? densityParam / 100 : densityParam,
       autoplay: params.get('autoplay') === '1',
