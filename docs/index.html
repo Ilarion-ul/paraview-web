@@ -274,9 +274,9 @@
       prefix: params.get('prefix') || defaultPrefix,
       frameDelay: Number(params.get('delay') || (quality === 'full' ? 1200 : 220)),
       maxPixelRatio: Number(params.get('pixelRatio') || (isTouchDevice ? 1 : 2)),
-      sampleDistance: Number(params.get('sampleDistance') || (quality === 'full' ? 2.5 : 8)),
-      imageSampleDistance: Number(params.get('imageSampleDistance') || (isTouchDevice ? 2 : 1.4)),
-      interactionImageSampleDistance: Number(params.get('interactionImageSampleDistance') || (isTouchDevice ? 4 : 2.2)),
+      sampleDistance: Number(params.get('sampleDistance') || (quality === 'full' ? 2.5 : 5.5)),
+      imageSampleDistance: Number(params.get('imageSampleDistance') || (isTouchDevice ? 1.5 : 1.25)),
+      interactionImageSampleDistance: Number(params.get('interactionImageSampleDistance') || (isTouchDevice ? 3.25 : 2)),
       fetchGzip: params.get('gzip') === '1',
       scalarMin: Number(params.get('scalarMin') || 0),
       scalarMax: Number(params.get('scalarMax') || 391.959),
@@ -335,6 +335,7 @@
     let interactionTimer = null;
     let lastTap = { time: 0, x: 0, y: 0 };
     let lastPlaybackToggleTime = 0;
+    let lastTouchStartTime = 0;
 
     function setStatus(heading, text, tone) {
       statusBox.dataset.tone = tone || '';
@@ -859,14 +860,19 @@
       view.addEventListener('pointerup', function (event) {
         setInteractionQuality(false);
         if (!isTouchDevice || event.pointerType === 'mouse') return;
+        if (window.performance.now() - lastTouchStartTime < 120) return;
         handlePlaybackTap(event.clientX, event.clientY, event);
       }, { passive: false });
 
-      view.addEventListener('touchend', function (event) {
-        setInteractionQuality(false);
-        const touch = event.changedTouches && event.changedTouches[0];
+      view.addEventListener('touchstart', function (event) {
+        const touch = event.touches && event.touches[0];
         if (!touch) return;
+        lastTouchStartTime = window.performance.now();
         handlePlaybackTap(touch.clientX, touch.clientY, event);
+      }, { passive: false });
+
+      view.addEventListener('touchend', function () {
+        setInteractionQuality(false);
       }, { passive: false });
 
       view.addEventListener('pointercancel', function () {
